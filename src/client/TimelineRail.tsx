@@ -11,6 +11,7 @@
  * attribute whose value is the node key; `scrollIntoView` lands on it.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { CSSProperties, MouseEvent } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { dotColor, extractPreview, PREVIEW_LENGTH } from './rail-logic.ts'
@@ -93,19 +94,23 @@ const listStyle: CSSProperties = {
   pointerEvents: 'auto',
 }
 
-/** Hover tooltip: floats to the left of its dot. */
-function tooltipStyle(open: boolean): CSSProperties {
+/**
+ * Hover tooltip, portalled onto `document.body` with `position: fixed`.
+ *
+ * It must NOT live inside the dot list: an `overflow-y: auto` container forces
+ * `overflow-x` to auto as well (CSS can't keep one axis visible while the
+ * other scrolls), which would clip the tooltip as it pops out to the left.
+ * Portalling escapes every ancestor's clipping; `translate(-100%, -50%)`
+ * anchors the box to the dot without knowing its width up front.
+ */
+function tooltipStyle(pos: { readonly x: number; readonly y: number }): CSSProperties {
   return {
-    position: 'absolute',
-    right: 'calc(100% + 12px)',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    // Browsers UA-style buttons with text-align: center; the tooltip span
-    // inherits it — pin left alignment explicitly.
+    position: 'fixed',
+    left: pos.x - 12,
+    top: pos.y,
+    transform: 'translate(-100%, -50%)',
+    zIndex: 2000,
     textAlign: 'left',
-    // Shrink-to-fit with only `right` set measures from the button's static
-    // position (viewport right edge) and gets ~0px — hence one char per line.
-    // `max-content` lets the text lay out horizontally, capped at maxWidth.
     width: 'max-content',
     maxWidth: 260,
     whiteSpace: 'normal',
@@ -119,8 +124,6 @@ function tooltipStyle(open: boolean): CSSProperties {
     lineHeight: 1.5,
     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
     pointerEvents: 'none',
-    opacity: open ? 1 : 0,
-    transition: 'opacity 120ms ease',
   }
 }
 
@@ -136,7 +139,7 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
   // sits outside the loaded window; `loadingOlder` gates the page fetch.
   const hasMore = useSession(s => s.hasMore)
   const loadingOlder = useSession(s => s.loadingOlder)
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null)
+  const [hovered, setHovered] = useState<{ key: string; x: number; y: number } | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
   // Ordered user-question dots. node.kind === 'user' is the append-origin
@@ -184,19 +187,24 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
     row.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  const hoveredMark = hovered === null ? undefined : marks.find(m => m.key === hovered.key)
+
   return (
     <div style={railStyle}>
       <div ref={listRef} style={listStyle} role="navigation" aria-label="提问时间线">
         {marks.map((mark, i) => {
-        const open = hoveredKey === mark.key
+        const open = hovered?.key === mark.key
         return (
           <button
             key={mark.key}
             type="button"
             aria-label={mark.preview ? `第 ${i + 1} 条提问：${mark.preview}` : `第 ${i + 1} 条提问`}
             onClick={() => jump(mark.key)}
-            onMouseEnter={() => setHoveredKey(mark.key)}
-            onMouseLeave={() => setHoveredKey(null)}
+            onMouseEnter={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect()
+              setHovered({ key: mark.key, x: rect.left, y: rect.top + rect.height / 2 })
+            }}
+            onMouseLeave={() => setHovered(null)}
             style={{
               position: 'relative',
               pointerEvents: 'auto',
@@ -212,19 +220,21 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
               transition: 'transform 120ms ease, box-shadow 120ms ease',
             }}
             onMouseDown={(e: MouseEvent) => e.stopPropagation()}
-          >
-            <span style={tooltipStyle(open)}>
-              <span style={{ display: 'block', fontSize: 11, color: '#6b7280', marginBottom: 4 }}>
-                第 {i + 1} 条提问 · {formatTime(mark.time)}
-              </span>
-              {mark.preview.length > 0
-                ? mark.preview + (mark.preview.length >= PREVIEW_LENGTH ? '…' : '')
-                : '（空消息）'}
-            </span>
-          </button>
+          />
         )
       })}
       </div>
+      {hovered !== null && hoveredMark !== undefined && createPortal(
+        <span style={tooltipStyle(hovered)}>
+          <span style={{ display: 'block', fontSize: 11, color: '#6b7280', marginBottom: 4 }}>
+            第 {marks.indexOf(hoveredMark) + 1} 条提问 · {formatTime(hoveredMark.time)}
+          </span>
+          {hoveredMark.preview.length > 0
+            ? hoveredMark.preview + (hoveredMark.preview.length >= PREVIEW_LENGTH ? '…' : '')
+            : '（空消息）'}
+        </span>,
+        document.body,
+      )}
     </div>
   )
 }
