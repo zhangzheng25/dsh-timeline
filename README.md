@@ -19,7 +19,7 @@ No configuration, no host dependencies, no database — everything comes from th
 - 📏 **Calm at any length** — at most 15 dots are shown at once; older ones scroll inside the rail (hidden scrollbar), dots keep their spacing instead of compressing
 - 🖱 **Follow-scroll** — scroll past the visible dots and the rail scrolls along, keeping the lit dot in view
 - ⚡ **Click to jump** — smooth-scrolls the conversation to the exact message
-- 👁 **Hover to preview** — shows the message number, the time it was asked, and the first 80 characters of what you said
+- 👁 **Hover to preview** — shows the message number, the time it was asked, the first 80 characters of your question, and a 3-line preview of the AI reply that followed
 - 🕐 **Absolute time** — today's messages show `HH:MM`; anything earlier shows `MM/DD HH:MM`
 - 🧹 **Scrollbar-free** — the conversation page's vertical scrollbar is hidden too; the lit dot is the position indicator
 - 🖱 **Click-through rail** — the rail never blocks the conversation; only the dots capture clicks

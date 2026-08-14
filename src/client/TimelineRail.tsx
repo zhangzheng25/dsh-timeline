@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CSSProperties, MouseEvent } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { extractPreview, PREVIEW_LENGTH } from './rail-logic.ts'
+import { extractPreview, PREVIEW_LENGTH, REPLY_LIMIT } from './rail-logic.ts'
 import { useCurrentAnchor } from './useCurrentAnchor.ts'
 
 /** The rail's session-scoped standard kit plus the injected loadOlder action. */
@@ -31,6 +31,8 @@ interface TimelineMark {
   readonly time: number
   /** Hover preview (first 80 chars). */
   readonly preview: string
+  /** AI reply text that followed this question (capped), for the tooltip. */
+  reply: string
 }
 
 /**
@@ -193,19 +195,46 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
   }, [])
 
   // Ordered user-question dots. node.kind === 'user' is the append-origin
-  // human prompt (steering/context/assistant/tool kinds are skipped).
+  // Ordered user-question dots. node.kind === 'user' is the append-origin
+  // human prompt (steering/context/assistant/tool kinds are skipped). Each
+  // dot also collects the AI reply that followed it: every assistant-step's
+  // text blocks between one question and the next are joined into `reply`
+  // (window in `assistant-step` nodes mirrors dsh-session-timeline).
   const marks = useMemo<TimelineMark[]>(() => {
     const result: TimelineMark[] = []
+    let replyParts: string[] = []
+    const flushReply = (): void => {
+      const last = result[result.length - 1]
+      if (last !== undefined) {
+        last.reply = replyParts.join('\n').replace(/\s+/g, ' ').trim().slice(0, REPLY_LIMIT)
+      }
+      replyParts = []
+    }
     for (const key of order) {
       const node = nodes.get(key)
-      if (node === undefined || node.kind !== 'user') continue
-      const data = node.data as { time?: number; content?: unknown }
-      result.push({
-        key,
-        time: data.time ?? 0,
-        preview: extractPreview(data.content),
-      })
+      if (node === undefined) continue
+      if (node.kind === 'user') {
+        flushReply()
+        const data = node.data as { time?: number; content?: unknown }
+        result.push({
+          key,
+          time: data.time ?? 0,
+          preview: extractPreview(data.content),
+          reply: '',
+        })
+      } else if (node.kind === 'assistant-step') {
+        const blocks = (node.data as { blocks?: unknown }).blocks
+        if (!Array.isArray(blocks)) continue
+        for (const block of blocks) {
+          if (block !== null && typeof block === 'object'
+            && (block as { kind?: unknown }).kind === 'text'
+            && typeof (block as { text?: unknown }).text === 'string') {
+            replyParts.push((block as { text: string }).text)
+          }
+        }
+      }
     }
+    flushReply()
     return result
   }, [order, nodes])
 
@@ -335,9 +364,30 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
           <span style={{ display: 'block', fontSize: 11, color: '#6b7280', marginBottom: 4 }}>
             第 {hoveredIndex + 1} 条提问 · {formatTime(hoveredMark.time)}
           </span>
-          {hoveredMark.preview.length > 0
-            ? hoveredMark.preview + (hoveredMark.preview.length >= PREVIEW_LENGTH ? '…' : '')
-            : '（空消息）'}
+          <span style={{ display: 'block' }}>
+            {hoveredMark.preview.length > 0
+              ? hoveredMark.preview + (hoveredMark.preview.length >= PREVIEW_LENGTH ? '…' : '')
+              : '（空消息）'}
+          </span>
+          <span
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              marginTop: 6,
+              paddingTop: 6,
+              borderTop: '1px solid rgba(15, 23, 42, 0.08)',
+              fontSize: 11,
+              lineHeight: 1.5,
+              color: '#6b7280',
+              maxHeight: 49.5, // 3 lines at 16.5px, backstop for the clamp
+              overflow: 'hidden',
+            }}
+          >
+            {hoveredMark.reply.length > 0
+              ? hoveredMark.reply + (hoveredMark.reply.length >= REPLY_LIMIT ? '…' : '')
+              : '（无回复）'}
+          </span>
         </span>,
         document.body,
       )}
