@@ -10,7 +10,7 @@
  * Jump: the harness renders every chat row with a `data-chat-anchor-key`
  * attribute whose value is the node key; `scrollIntoView` lands on it.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, MouseEvent } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { dotColor, extractPreview, PREVIEW_LENGTH } from './rail-logic.ts'
@@ -60,7 +60,12 @@ function formatTime(ms: number): string {
   return `${date.getMonth() + 1}/${date.getDate()} ${hh}:${mm}`
 }
 
-/** Rail container: fixed at the frame's right edge, vertically centred. */
+/**
+ * Rail container: fixed at the frame's right edge, vertically centred.
+ * Click-through: only the dot list below opts back into pointer events.
+ * Height-capped so a long conversation cannot overflow the viewport — the
+ * dot list inside scrolls instead (dots keep their spacing, never compress).
+ */
 const railStyle: CSSProperties = {
   position: 'fixed',
   right: 8,
@@ -68,12 +73,24 @@ const railStyle: CSSProperties = {
   transform: 'translateY(-50%)',
   display: 'flex',
   flexDirection: 'column',
+  maxHeight: '70vh',
+  zIndex: 1000,
+  // The shell.overlay layer is click-through; only the dot list opts back in.
+  pointerEvents: 'none',
+}
+
+/** Dot list: scrolls internally once it outgrows the rail's height cap. */
+const listStyle: CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  overflowY: 'auto',
+  scrollbarWidth: 'none',
+  display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
   gap: 10,
   padding: '10px 4px',
-  zIndex: 1000,
-  // The shell.overlay layer is click-through; only the dots opt back in.
-  pointerEvents: 'none',
+  pointerEvents: 'auto',
 }
 
 /** Hover tooltip: floats to the left of its dot. */
@@ -120,6 +137,7 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
   const hasMore = useSession(s => s.hasMore)
   const loadingOlder = useSession(s => s.loadingOlder)
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   // Ordered user-question dots. node.kind === 'user' is the append-origin
   // human prompt (steering/context/assistant/tool kinds are skipped).
@@ -149,6 +167,14 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
     if (hasMore && !loadingOlder) void loadOlder()
   }, [hasMore, loadingOlder, loadOlder, order])
 
+  // While older pages are still being pulled, keep the dot list pinned to the
+  // newest marks (bottom). Once pagination finishes (`hasMore` false) the user
+  // is free to scroll the list; a later new message no longer yanks the view.
+  useEffect(() => {
+    const el = listRef.current
+    if (el !== null && hasMore) el.scrollTop = el.scrollHeight
+  }, [marks.length, hasMore])
+
   if (marks.length === 0) return null
 
   /** Jump to the chat row with the given node key. */
@@ -159,8 +185,9 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
   }
 
   return (
-    <div style={railStyle} role="navigation" aria-label="提问时间线">
-      {marks.map((mark, i) => {
+    <div style={railStyle}>
+      <div ref={listRef} style={listStyle} role="navigation" aria-label="提问时间线">
+        {marks.map((mark, i) => {
         const open = hoveredKey === mark.key
         return (
           <button
@@ -197,6 +224,7 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
           </button>
         )
       })}
+      </div>
     </div>
   )
 }

@@ -14,6 +14,7 @@ No configuration, no host dependencies, no database — everything comes from th
 
 - 🎯 **One dot per question** — every user message gets a dot in a slim rail on the right edge of the frame
 - 📜 **Full-history rail** — long conversations auto-paginate (`loadOlder`) until *every* question in the session has a dot, not just the most recent page
+- 📏 **Never overflows** — the rail caps at 70% of the viewport height; once the dots outgrow it the list scrolls with the wheel (hidden scrollbar), and dots keep their spacing instead of compressing
 - ⚡ **Click to jump** — smooth-scrolls the conversation to the exact message
 - 👁 **Hover to preview** — shows the message number, the time it was asked, and the first 80 characters of what you said
 - 🕐 **Absolute time** — today's messages show `HH:MM`; anything earlier shows `MM/DD HH:MM`
