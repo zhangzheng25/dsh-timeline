@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CSSProperties, MouseEvent } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { barColor, extractPreview, PREVIEW_LENGTH } from './rail-logic.ts'
+import { dotColor, extractPreview, PREVIEW_LENGTH } from './rail-logic.ts'
 
 /** The rail's session-scoped standard kit plus the injected loadOlder action. */
 export type TimelineRailProps = PropsRuntime<'timeline.rail'> & {
@@ -128,20 +128,6 @@ function tooltipStyle(pos: { readonly x: number; readonly y: number }): CSSPrope
 }
 
 /**
- * Bar hit-target geometry. The button is TALLER than the visible 2px bar so
- * clicks land easily; the bar itself is a child span centred inside it.
- * The list lays these out at a fixed step, which the mousemove magnet relies
- * on to compute which bar the pointer is near.
- */
-const BAR_HIT_H = 16 // transparent button height (8x the visible bar)
-const BAR_VISUAL_H = 2 // the visible bar
-const BAR_WIDTH = 18
-const LIST_GAP = 10 // flex gap between hit targets
-const LIST_PADDING_TOP = 10
-const BAR_STEP = BAR_HIT_H + LIST_GAP // 26 — one bar's pitch down the list
-const ADHERE_PX = 7 // magnet radius: pointer within this of a bar centre lights it
-
-/**
  * @param props - the session-scoped standard kit from the framework, plus the
  *   injected `loadOlder` action (no-op default for renders outside the slot
  *   machinery).
@@ -156,7 +142,7 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
   const [hovered, setHovered] = useState<{ key: string; x: number; y: number } | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  // Ordered user-question bars. node.kind === 'user' is the append-origin
+  // Ordered user-question dots. node.kind === 'user' is the append-origin
   // human prompt (steering/context/assistant/tool kinds are skipped).
   const marks = useMemo<TimelineMark[]>(() => {
     const result: TimelineMark[] = []
@@ -184,7 +170,7 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
     if (hasMore && !loadingOlder) void loadOlder()
   }, [hasMore, loadingOlder, loadOlder, order])
 
-  // While older pages are still being pulled, keep the bar list pinned to the
+  // While older pages are still being pulled, keep the dot list pinned to the
   // newest marks (bottom). Once pagination finishes (`hasMore` false) the user
   // is free to scroll the list; a later new message no longer yanks the view.
   useEffect(() => {
@@ -201,43 +187,11 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
     row.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  /**
-   * Magnet hover: bars sit at a fixed step down the list, so a single
-   * mousemove can resolve the nearest bar from the pointer's Y offset and
-   * light it (plus its tooltip) when within {@link ADHERE_PX}. Returning the
-   * same state reference makes React bail out, so steady movement over one
-   * bar re-renders nothing.
-   */
-  const onListMouseMove = (e: MouseEvent<HTMLDivElement>): void => {
-    const el = listRef.current
-    if (el === null) return
-    const rect = el.getBoundingClientRect()
-    const contentY = e.clientY - rect.top + el.scrollTop - LIST_PADDING_TOP
-    const i = Math.round(contentY / BAR_STEP)
-    if (i >= 0 && i < marks.length && Math.abs(contentY - i * BAR_STEP) <= ADHERE_PX) {
-      const mark = marks[i]
-      const viewY = rect.top + LIST_PADDING_TOP + i * BAR_STEP - el.scrollTop
-      setHovered(prev =>
-        prev?.key === mark.key && Math.abs(prev.y - viewY) < 1 ? prev : { key: mark.key, x: rect.left + BAR_WIDTH / 2, y: viewY },
-      )
-    } else if (hovered !== null) {
-      setHovered(null)
-    }
-  }
-
   const hoveredMark = hovered === null ? undefined : marks.find(m => m.key === hovered.key)
 
   return (
     <div style={railStyle}>
-      <div
-        ref={listRef}
-        style={listStyle}
-        role="navigation"
-        aria-label="提问时间线"
-        onMouseMove={onListMouseMove}
-        onMouseLeave={() => setHovered(null)}
-        onScroll={() => setHovered(null)}
-      >
+      <div ref={listRef} style={listStyle} role="navigation" aria-label="提问时间线">
         {marks.map((mark, i) => {
         const open = hovered?.key === mark.key
         return (
@@ -246,41 +200,34 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
             type="button"
             aria-label={mark.preview ? `第 ${i + 1} 条提问：${mark.preview}` : `第 ${i + 1} 条提问`}
             onClick={() => jump(mark.key)}
+            onMouseEnter={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect()
+              setHovered({ key: mark.key, x: rect.left, y: rect.top + rect.height / 2 })
+            }}
+            onMouseLeave={() => setHovered(null)}
             onMouseDown={(e: MouseEvent) => e.stopPropagation()}
             style={{
               position: 'relative',
               pointerEvents: 'auto',
-              // Tall transparent hit target; the visible bar is the child span.
-              width: BAR_WIDTH,
-              height: BAR_HIT_H,
+              // A perfect circle that STAYS a circle: in a flex column the
+              // default flex-shrink would squash the height and turn it into
+              // an ellipse; flexShrink 0 pins the 10x10 shape no matter how
+              // the window is squeezed.
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
               flexShrink: 0,
               border: 'none',
               padding: 0,
-              background: 'transparent',
               cursor: 'pointer',
+              background: dotColor(i, marks.length),
+              // Hover highlight: tight 2px ring in the DSH theme ink
+              // (#0F1115) and a modest scale — small footprint, high contrast.
+              boxShadow: open ? '0 0 0 2px rgba(15, 17, 21, 0.8)' : 'none',
+              transform: open ? 'scale(1.3)' : 'scale(1)',
+              transition: 'transform 120ms ease, box-shadow 120ms ease',
             }}
-          >
-            <span
-              style={{
-                display: 'block',
-                width: BAR_WIDTH,
-                height: BAR_VISUAL_H,
-                borderRadius: 1,
-                marginTop: (BAR_HIT_H - BAR_VISUAL_H) / 2,
-                // A horizontal bar, not a dot: in a flex column the default
-                // flex-shrink would squash a circle into an ellipse; a bar
-                // only ever gets thinner. flexShrink 0 keeps even that from
-                // happening (the span is inside the flex item, not a flex
-                // item itself, so it also cannot be squeezed).
-                background: barColor(i, marks.length),
-                // Hover highlight: tight 2px ring in the DSH theme ink
-                // (#0F1115) and a modest scale — small footprint, high contrast.
-                boxShadow: open ? '0 0 0 2px rgba(15, 17, 21, 0.8)' : 'none',
-                transform: open ? 'scale(1.25)' : 'scale(1)',
-                transition: 'transform 120ms ease, box-shadow 120ms ease',
-              }}
-            />
-          </button>
+          />
         )
       })}
       </div>

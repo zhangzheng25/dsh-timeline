@@ -39,16 +39,14 @@ export function extractPreview(content: unknown): string {
 }
 
 /**
- * Bar color: a neutral gray gradient. Newest (highest index) is the deepest
- * tone `#0F1115` (the DSH theme ink), fading linearly toward `#D3D7DE` for
- * the oldest — dark enough to stay visible on the light theme.
- * @param index - bar position in the rail (0 = oldest).
- * @param total - number of bars.
+ * Dot color: blue gradient, like a Git commit graph. Newest (highest index)
+ * is the deepest tone `#4D75E6` (hsl lightness 45%), fading to a light blue
+ * at 72% lightness for the oldest.
+ * @param index - dot position in the rail (0 = oldest).
+ * @param total - number of dots.
  */
-export function barColor(index: number, total: number): string {
+export function dotColor(index: number, total: number): string {
   const t = total <= 1 ? 0 : index / (total - 1)
-  const deep = [15, 17, 21] // #0F1115 — newest
-  const light = [211, 215, 222] // #D3D7DE — oldest
-  const c = light.map((v, i) => Math.round(v + (deep[i] - v) * t))
-  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`
+  const lightness = 72 - t * 27 // 72% -> 45%
+  return `hsl(218, 88%, ${lightness}%)`
 }
