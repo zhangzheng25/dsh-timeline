@@ -1,6 +1,6 @@
 /**
- * TimelineRail: a slim vertical dot rail on the right edge of the frame — one
- * dot per user question. Click a dot to smooth-scroll to that message; hover
+ * TimelineRail: a slim vertical bar rail on the right edge of the frame — one
+ * bar per user question. Click a bar to smooth-scroll to that message; hover
  * to preview its first 80 characters. That's the whole plugin.
  *
  * Data sources (all from the session-scoped `useSession` snapshot):
@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CSSProperties, MouseEvent } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { dotColor, extractPreview, PREVIEW_LENGTH } from './rail-logic.ts'
+import { barColor, extractPreview, PREVIEW_LENGTH } from './rail-logic.ts'
 
 /** The rail's session-scoped standard kit plus the injected loadOlder action. */
 export type TimelineRailProps = PropsRuntime<'timeline.rail'> & {
@@ -22,7 +22,7 @@ export type TimelineRailProps = PropsRuntime<'timeline.rail'> & {
   loadOlder?: () => Promise<void>
 }
 
-/** One user-question dot. */
+/** One user-question bar. */
 interface TimelineMark {
   /** Chat node key — also the row's `data-chat-anchor-key`. */
   readonly key: string
@@ -63,9 +63,9 @@ function formatTime(ms: number): string {
 
 /**
  * Rail container: fixed at the frame's right edge, vertically centred.
- * Click-through: only the dot list below opts back into pointer events.
+ * Click-through: only the bar list below opts back into pointer events.
  * Height-capped so a long conversation cannot overflow the viewport — the
- * dot list inside scrolls instead (dots keep their spacing, never compress).
+ * bar list inside scrolls instead (bars keep their spacing, never compress).
  */
 const railStyle: CSSProperties = {
   position: 'fixed',
@@ -76,11 +76,11 @@ const railStyle: CSSProperties = {
   flexDirection: 'column',
   maxHeight: '70vh',
   zIndex: 1000,
-  // The shell.overlay layer is click-through; only the dot list opts back in.
+  // The shell.overlay layer is click-through; only the bar list opts back in.
   pointerEvents: 'none',
 }
 
-/** Dot list: scrolls internally once it outgrows the rail's height cap. */
+/** bar list: scrolls internally once it outgrows the rail's height cap. */
 const listStyle: CSSProperties = {
   flex: 1,
   minHeight: 0,
@@ -97,11 +97,11 @@ const listStyle: CSSProperties = {
 /**
  * Hover tooltip, portalled onto `document.body` with `position: fixed`.
  *
- * It must NOT live inside the dot list: an `overflow-y: auto` container forces
+ * It must NOT live inside the bar list: an `overflow-y: auto` container forces
  * `overflow-x` to auto as well (CSS can't keep one axis visible while the
  * other scrolls), which would clip the tooltip as it pops out to the left.
  * Portalling escapes every ancestor's clipping; `translate(-100%, -50%)`
- * anchors the box to the dot without knowing its width up front.
+ * anchors the box to the bar without knowing its width up front.
  */
 function tooltipStyle(pos: { readonly x: number; readonly y: number }): CSSProperties {
   return {
@@ -142,7 +142,7 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
   const [hovered, setHovered] = useState<{ key: string; x: number; y: number } | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  // Ordered user-question dots. node.kind === 'user' is the append-origin
+  // Ordered user-question bars. node.kind === 'user' is the append-origin
   // human prompt (steering/context/assistant/tool kinds are skipped).
   const marks = useMemo<TimelineMark[]>(() => {
     const result: TimelineMark[] = []
@@ -170,7 +170,7 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
     if (hasMore && !loadingOlder) void loadOlder()
   }, [hasMore, loadingOlder, loadOlder, order])
 
-  // While older pages are still being pulled, keep the dot list pinned to the
+  // While older pages are still being pulled, keep the bar list pinned to the
   // newest marks (bottom). Once pagination finishes (`hasMore` false) the user
   // is free to scroll the list; a later new message no longer yanks the view.
   useEffect(() => {
@@ -208,15 +208,19 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
             style={{
               position: 'relative',
               pointerEvents: 'auto',
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
+              // A horizontal bar, not a dot: in a flex column the default
+              // flex-shrink would squash a circle into an ellipse; a bar only
+              // ever gets thinner. flexShrink 0 keeps even that from happening.
+              width: 18,
+              height: 3,
+              borderRadius: 2,
+              flexShrink: 0,
               border: 'none',
               padding: 0,
               cursor: 'pointer',
-              background: dotColor(i, marks.length),
+              background: barColor(i, marks.length),
               boxShadow: open ? '0 0 0 3px rgba(218, 228, 255, 0.55)' : 'none',
-              transform: open ? 'scale(1.35)' : 'scale(1)',
+              transform: open ? 'scale(1.4)' : 'scale(1)',
               transition: 'transform 120ms ease, box-shadow 120ms ease',
             }}
             onMouseDown={(e: MouseEvent) => e.stopPropagation()}

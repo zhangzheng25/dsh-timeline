@@ -52,7 +52,7 @@ export function apply(ctx: ClientContext): void {
       name: 'timeline.rail',
       // Session-scoped inject face: the rail receives a binding-safe
       // `loadOlder` action for its own session, used to auto-paginate the
-      // history window so dots cover the whole conversation.
+      // history window so bars cover the whole conversation.
       inject: (sessionId) => ({
         loadOlder: createLoadOlder(ctx.sessions, sessionId),
       }),
