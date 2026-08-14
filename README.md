@@ -14,6 +14,7 @@ No configuration, no host dependencies, no database — everything comes from th
 
 - 🎯 **One dot per question** — every user message gets a dot in a slim rail on the right edge of the frame
 - 🔵 **Quiet by default** — dots are gray; the highlighted dot (hovered, or the segment you are reading) turns blue. State is carried by color alone, so dots never grow and nothing can ever be clipped
+- 🌓 **Theme-aware** — dots and the preview tooltip use the DSH design tokens (`--dsw-alias-*` / `--dsw-static-*`), so they follow light / dark / system switches without a restart
 - 📍 **Segment highlight** — scrolling the chat lights the dot of the question whose segment (question + its answer) the viewport bottom is in; at the conversation's bottom the newest dot is lit by default
 - 📜 **Full-history rail** — long conversations auto-paginate (`loadOlder`) until *every* question in the session has a dot, not just the most recent page
 - 📏 **Calm at any length** — at most 15 dots are shown at once; older ones scroll inside the rail (hidden scrollbar), dots keep their spacing instead of compressing
@@ -72,6 +73,7 @@ Build artifacts (`lib/`) are committed, so end users don't need to build. After 
 - `dsh.client.inject` lists the runtime packages the web loader must provide
 - The tooltip text is left-aligned explicitly (buttons UA-default to `text-align: center`), and sized with `width: max-content` so absolute positioning can't collapse it to one character per line
 - Dots are `flex-shrink: 0` so flex layouts can never squash the circle into an ellipse; tooltips are portalled to `document.body` because an `overflow-y: auto` ancestor would clip them
+- Zero-JS theming: every color references a DSH design token (defined on `body`, re-mapped by `body[data-ds-dark-theme]`) with a literal fallback, so the rail restyles automatically when the theme flips and degrades gracefully without the token sheets
 
 ## Credits
 

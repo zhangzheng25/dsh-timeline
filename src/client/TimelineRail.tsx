@@ -66,13 +66,19 @@ function formatTime(ms: number): string {
 const DOT_SIZE = 10
 const DOT_GAP = 16
 /**
- * Dot colors: plain dots are quiet gray; the highlighted dot (hovered or
- * current segment) turns blue. Deliberately NO scale/ring on highlight — an
+ * Dot colors come from the DSH design tokens (defined on `body`, re-mapped
+ * by `body[data-ds-dark-theme]`), so both palettes render correctly and the
+ * rail follows light/dark/system theme switches without any JS: plain dots
+ * use the static neutral-bluish-400 gray (a mid-gray that reads on both
+ * surfaces), the highlighted dot (hovered or current segment) uses the
+ * business/primary accent — the deepseek blue in light mode, the brighter
+ * deepseek blue in dark mode. Deliberately NO scale/ring on highlight — an
  * enlarged dot was the reason edge dots got clipped, so state is carried by
  * color alone and the 10px circle can never touch the list's edges.
+ * (The fallback literals keep the old look when the token sheets are absent.)
  */
-const DOT_COLOR = '#B8BEC9'
-const DOT_HIGHLIGHT = '#4D75E6'
+const DOT_COLOR = 'var(--dsw-static-neutral-bluish-400, #B8BEC9)'
+const DOT_HIGHLIGHT = 'var(--dsw-alias-state-business-primary, #4D75E6)'
 /**
  * Breathing room above the first and below the last dot. Must be a MARGIN on
  * the edge dots, not container padding: padding scrolls out of view at the
@@ -136,6 +142,9 @@ const listStyle: CSSProperties = {
  * other scrolls), which would clip the tooltip as it pops out to the left.
  * Portalling escapes every ancestor's clipping; `translate(-100%, -50%)`
  * anchors the box to the dot without knowing its width up front.
+ *
+ * Surface colors use the DSH alias tokens (bg-layer-1 / label-primary /
+ * border-*) so the tooltip matches the current theme automatically.
  */
 function tooltipStyle(pos: { readonly x: number; readonly y: number }): CSSProperties {
   return {
@@ -149,9 +158,9 @@ function tooltipStyle(pos: { readonly x: number; readonly y: number }): CSSPrope
     maxWidth: 260,
     whiteSpace: 'normal',
     wordBreak: 'break-word',
-    background: '#ffffff',
-    color: '#1f2430',
-    border: '1px solid rgba(15, 23, 42, 0.12)',
+    background: 'var(--dsw-alias-bg-layer-1, #ffffff)',
+    color: 'var(--dsw-alias-label-primary, #1f2430)',
+    border: '1px solid var(--dsw-alias-border-l2, rgba(15, 23, 42, 0.12))',
     borderRadius: 8,
     padding: '8px 10px',
     fontSize: 12,
@@ -361,7 +370,7 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
       </div>
       {hovered !== null && hoveredMark !== undefined && createPortal(
         <span style={tooltipStyle(hovered)}>
-          <span style={{ display: 'block', fontSize: 11, color: '#6b7280', marginBottom: 4 }}>
+          <span style={{ display: 'block', fontSize: 11, color: 'var(--dsw-alias-label-secondary, #6b7280)', marginBottom: 4 }}>
             第 {hoveredIndex + 1} 条提问 · {formatTime(hoveredMark.time)}
           </span>
           <span style={{ display: 'block' }}>
@@ -376,10 +385,10 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
               WebkitBoxOrient: 'vertical',
               marginTop: 6,
               paddingTop: 6,
-              borderTop: '1px solid rgba(15, 23, 42, 0.08)',
+              borderTop: '1px solid var(--dsw-alias-border-l1, rgba(15, 23, 42, 0.08))',
               fontSize: 11,
               lineHeight: 1.5,
-              color: '#6b7280',
+              color: 'var(--dsw-alias-label-secondary, #6b7280)',
               maxHeight: 49.5, // 3 lines at 16.5px, backstop for the clamp
               overflow: 'hidden',
             }}
