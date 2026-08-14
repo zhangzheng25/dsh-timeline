@@ -73,7 +73,7 @@ Build artifacts (`lib/`) are committed, so end users don't need to build. After 
 - `dsh.client.inject` lists the runtime packages the web loader must provide
 - The tooltip text is left-aligned explicitly (buttons UA-default to `text-align: center`), and sized with `width: max-content` so absolute positioning can't collapse it to one character per line
 - Dots are `flex-shrink: 0` so flex layouts can never squash the circle into an ellipse; tooltips are portalled to `document.body` because an `overflow-y: auto` ancestor would clip them
-- Zero-JS theming: every color references a DSH design token (defined on `body`, re-mapped by `body[data-ds-dark-theme]`) with a literal fallback, so the rail restyles automatically when the theme flips and degrades gracefully without the token sheets
+- Zero-JS theming: dot colors reference DSH design tokens (defined on `body`, re-mapped by `body[data-ds-dark-theme]`); the tooltip's surface is styled by the injected stylesheet — paper-white in light mode, near-black with white copy in dark mode — with literal fallbacks when the token sheets are absent
 
 ## Credits
 

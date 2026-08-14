@@ -143,8 +143,11 @@ const listStyle: CSSProperties = {
  * Portalling escapes every ancestor's clipping; `translate(-100%, -50%)`
  * anchors the box to the dot without knowing its width up front.
  *
- * Surface colors use the DSH alias tokens (bg-layer-1 / label-primary /
- * border-*) so the tooltip matches the current theme automatically.
+ * Colors live in the injected stylesheet (see the style-injection effect
+ * below), NOT inline: the light palette reads the DSH alias tokens
+ * (paper-white card), while `body[data-ds-dark-theme]` flips the card to a
+ * near-black background with white copy — a deliberate preference over the
+ * alias layer-1 gray, which reads too light on the dark theme.
  */
 function tooltipStyle(pos: { readonly x: number; readonly y: number }): CSSProperties {
   return {
@@ -158,9 +161,6 @@ function tooltipStyle(pos: { readonly x: number; readonly y: number }): CSSPrope
     maxWidth: 260,
     whiteSpace: 'normal',
     wordBreak: 'break-word',
-    background: 'var(--dsw-alias-bg-layer-1, #ffffff)',
-    color: 'var(--dsw-alias-label-primary, #1f2430)',
-    border: '1px solid var(--dsw-alias-border-l2, rgba(15, 23, 42, 0.12))',
     borderRadius: 8,
     padding: '8px 10px',
     fontSize: 12,
@@ -191,11 +191,22 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
   // honored by Firefox (and newer Chromium), the WebKit pseudo-element
   // covers the rest. Scrolling itself is untouched: wheel, keyboard and
   // touch still scroll normally, there is just no visible scrollbar.
+  //
+  // The same stylesheet carries the tooltip surface: inline styles cannot
+  // express a theme switch (they beat any stylesheet rule), so the card's
+  // colors live here. Light mode reads the DSH alias tokens (paper-white
+  // card); `body[data-ds-dark-theme]` flips it to a near-black card with
+  // white copy instead of the alias layer-1 gray.
   useEffect(() => {
     const style = document.createElement('style')
     style.textContent = [
       '[data-timeline-list]{scrollbar-width:none}[data-timeline-list]::-webkit-scrollbar{display:none;width:0;height:0}',
       '[data-conversation-scroll]{scrollbar-width:none}[data-conversation-scroll]::-webkit-scrollbar{display:none;width:0;height:0}',
+      '[data-timeline-tooltip]{background:var(--dsw-alias-bg-layer-1,#ffffff);color:var(--dsw-alias-label-primary,#1f2430);border:1px solid var(--dsw-alias-border-l2,rgba(15,23,42,.12))}',
+      'body[data-ds-dark-theme] [data-timeline-tooltip]{background:var(--dsw-static-neutral-bluish-1000,#0f1115);color:#ffffff;border-color:rgba(255,255,255,.12)}',
+      '[data-timeline-meta]{color:var(--dsw-alias-label-tertiary,#6b7280)}',
+      '[data-timeline-reply]{color:var(--dsw-alias-label-tertiary,#6b7280);border-top:1px solid var(--dsw-alias-border-l1,rgba(15,23,42,.08))}',
+      'body[data-ds-dark-theme] [data-timeline-reply]{border-top-color:rgba(255,255,255,.12)}',
     ].join('')
     document.head.appendChild(style)
     return () => {
@@ -369,8 +380,8 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
         })}
       </div>
       {hovered !== null && hoveredMark !== undefined && createPortal(
-        <span style={tooltipStyle(hovered)}>
-          <span style={{ display: 'block', fontSize: 11, color: 'var(--dsw-alias-label-tertiary, #6b7280)', marginBottom: 4 }}>
+        <span data-timeline-tooltip style={tooltipStyle(hovered)}>
+          <span data-timeline-meta style={{ display: 'block', fontSize: 11, marginBottom: 4 }}>
             第 {hoveredIndex + 1} 条提问 · {formatTime(hoveredMark.time)}
           </span>
           <span style={{ display: 'block' }}>
@@ -379,16 +390,15 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
               : '（空消息）'}
           </span>
           <span
+            data-timeline-reply
             style={{
               display: '-webkit-box',
               WebkitLineClamp: 3,
               WebkitBoxOrient: 'vertical',
               marginTop: 6,
               paddingTop: 6,
-              borderTop: '1px solid var(--dsw-alias-border-l1, rgba(15, 23, 42, 0.08))',
               fontSize: 11,
               lineHeight: 1.5,
-              color: 'var(--dsw-alias-label-tertiary, #6b7280)',
               maxHeight: 49.5, // 3 lines at 16.5px, backstop for the clamp
               overflow: 'hidden',
             }}

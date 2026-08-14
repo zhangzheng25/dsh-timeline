@@ -73,7 +73,7 @@ pnpm run build       # tsdown → lib/index.js（host）+ lib/client.js（浏览
 - `dsh.client.inject` 声明 web loader 需要提供的运行时包
 - tooltip 显式左对齐（button 的 UA 样式默认居中），并用 `width: max-content` 撑开宽度，避免绝对定位把文字挤成每字一行
 - 圆点 `flex-shrink: 0` 防止 flex 布局把圆压成椭圆；tooltip 用 portal 渲染到 `document.body`（`overflow-y: auto` 的祖先会裁剪 absolute 子元素）
-- 颜色零 JS 适配：所有颜色引用 DSH 设计令牌（挂在 `body` 上，`body[data-ds-dark-theme]` 自动换肤），带字面量 fallback，令牌缺失时回退到原有配色
+- 颜色零 JS 适配：圆点颜色直接引用 DSH 设计令牌（挂在 `body` 上，`body[data-ds-dark-theme]` 自动换肤）；悬浮卡片颜色由注入的样式表管理，浅色为白底、深色切换为黑底白字，令牌缺失时回退到原有配色
 
 ## 致谢
 
