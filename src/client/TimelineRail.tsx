@@ -212,8 +212,8 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
               // flex-shrink would squash a circle into an ellipse; a bar only
               // ever gets thinner. flexShrink 0 keeps even that from happening.
               width: 18,
-              height: 3,
-              borderRadius: 2,
+              height: 2,
+              borderRadius: 1,
               flexShrink: 0,
               border: 'none',
               padding: 0,

@@ -39,13 +39,16 @@ export function extractPreview(content: unknown): string {
 }
 
 /**
- * Blue gradient bar color: newest (highest index) is deepest, oldest is
- * lightest — 72% lightness fading to 45%, like a Git commit graph.
+ * Bar color: a subdued gray-blue gradient. Newest (highest index) is the
+ * deepest tone `#EBEEF2`, fading linearly toward `#F7F8FA` for the oldest —
+ * deliberately quiet so the rail blends into the light theme.
  * @param index - bar position in the rail (0 = oldest).
  * @param total - number of bars.
  */
 export function barColor(index: number, total: number): string {
   const t = total <= 1 ? 0 : index / (total - 1)
-  const lightness = 72 - t * 27 // 72% -> 45%
-  return `hsl(218, 88%, ${lightness}%)`
+  const deep = [235, 238, 242] // #EBEEF2 — newest
+  const light = [247, 248, 250] // #F7F8FA — oldest
+  const c = light.map((v, i) => Math.round(v + (deep[i] - v) * t))
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`
 }
