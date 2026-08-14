@@ -219,8 +219,10 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
               padding: 0,
               cursor: 'pointer',
               background: barColor(i, marks.length),
-              boxShadow: open ? '0 0 0 3px rgba(218, 228, 255, 0.55)' : 'none',
-              transform: open ? 'scale(1.4)' : 'scale(1)',
+              // Hover highlight: tight 2px ring in the DSH theme ink
+              // (#0F1115) and a modest scale — small footprint, high contrast.
+              boxShadow: open ? '0 0 0 2px rgba(15, 17, 21, 0.8)' : 'none',
+              transform: open ? 'scale(1.25)' : 'scale(1)',
               transition: 'transform 120ms ease, box-shadow 120ms ease',
             }}
             onMouseDown={(e: MouseEvent) => e.stopPropagation()}
