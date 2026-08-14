@@ -15,6 +15,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { TimelineOverlay } from './TimelineOverlay.tsx'
 import { TimelineRail } from './TimelineRail.tsx'
+import { createLoadOlder } from './railInject.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
@@ -28,7 +29,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 /** Required services (cordis fiber inject). */
-export const inject = ['slots']
+export const inject = ['slots', 'sessions']
 
 /**
  * Register the overlay and rail once their slot declarations are on the
@@ -47,7 +48,15 @@ export function apply(ctx: ClientContext): void {
     TimelineOverlay,
   ))
   ctx.slots.inject('timeline.rail', () => ctx.slots.register(
-    { name: 'timeline.rail' },
+    {
+      name: 'timeline.rail',
+      // Session-scoped inject face: the rail receives a binding-safe
+      // `loadOlder` action for its own session, used to auto-paginate the
+      // history window so dots cover the whole conversation.
+      inject: (sessionId) => ({
+        loadOlder: createLoadOlder(ctx.sessions, sessionId),
+      }),
+    },
     TimelineRail,
   ))
 }

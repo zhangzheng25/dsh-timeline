@@ -10,13 +10,16 @@
  * Jump: the harness renders every chat row with a `data-chat-anchor-key`
  * attribute whose value is the node key; `scrollIntoView` lands on it.
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, MouseEvent } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { dotColor, extractPreview, PREVIEW_LENGTH } from './rail-logic.ts'
 
-/** The rail's session-scoped standard kit (useSession is framework-injected). */
-export type TimelineRailProps = PropsRuntime<'timeline.rail'>
+/** The rail's session-scoped standard kit plus the injected loadOlder action. */
+export type TimelineRailProps = PropsRuntime<'timeline.rail'> & {
+  /** Pull one earlier history page (injected, session-bound; harness pages of 50 events). */
+  loadOlder?: () => Promise<void>
+}
 
 /** One user-question dot. */
 interface TimelineMark {
@@ -105,11 +108,17 @@ function tooltipStyle(open: boolean): CSSProperties {
 }
 
 /**
- * @param props - the session-scoped standard kit from the framework.
+ * @param props - the session-scoped standard kit from the framework, plus the
+ *   injected `loadOlder` action (no-op default for renders outside the slot
+ *   machinery).
  */
-export function TimelineRail({ useSession }: TimelineRailProps) {
+export function TimelineRail({ useSession, loadOlder = async () => {} }: TimelineRailProps) {
   const order = useSession(s => s.chat.order)
   const nodes = useSession(s => s.chat.nodes)
+  // F3: the conversation paging window. `hasMore` says older history still
+  // sits outside the loaded window; `loadingOlder` gates the page fetch.
+  const hasMore = useSession(s => s.hasMore)
+  const loadingOlder = useSession(s => s.loadingOlder)
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
 
   // Ordered user-question dots. node.kind === 'user' is the append-origin
@@ -129,6 +138,16 @@ export function TimelineRail({ useSession }: TimelineRailProps) {
     }
     return result
   }, [order, nodes])
+
+  // Auto-paginate: keep pulling older pages until the whole conversation is
+  // in the window (`hasMore` flips to false). The window only loads the most
+  // recent PAGE_MESSAGES (50) events initially, so without this the rail would
+  // only cover the tail of a long session. `order` in the deps re-arms the
+  // effect after each prepend (and retries if the first call raced the window
+  // opening, when loadOlder is internally a no-op).
+  useEffect(() => {
+    if (hasMore && !loadingOlder) void loadOlder()
+  }, [hasMore, loadingOlder, loadOlder, order])
 
   if (marks.length === 0) return null
 
