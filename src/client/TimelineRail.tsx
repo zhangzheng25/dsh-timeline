@@ -370,7 +370,7 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
       </div>
       {hovered !== null && hoveredMark !== undefined && createPortal(
         <span style={tooltipStyle(hovered)}>
-          <span style={{ display: 'block', fontSize: 11, color: 'var(--dsw-alias-label-secondary, #6b7280)', marginBottom: 4 }}>
+          <span style={{ display: 'block', fontSize: 11, color: 'var(--dsw-alias-label-tertiary, #6b7280)', marginBottom: 4 }}>
             第 {hoveredIndex + 1} 条提问 · {formatTime(hoveredMark.time)}
           </span>
           <span style={{ display: 'block' }}>
@@ -388,7 +388,7 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
               borderTop: '1px solid var(--dsw-alias-border-l1, rgba(15, 23, 42, 0.08))',
               fontSize: 11,
               lineHeight: 1.5,
-              color: 'var(--dsw-alias-label-secondary, #6b7280)',
+              color: 'var(--dsw-alias-label-tertiary, #6b7280)',
               maxHeight: 49.5, // 3 lines at 16.5px, backstop for the clamp
               overflow: 'hidden',
             }}
