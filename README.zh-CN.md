@@ -66,6 +66,8 @@ pnpm run build       # tsdown → lib/index.js（host）+ lib/client.js（浏览
 
 构建产物（`lib/`）已提交，最终用户无需构建。改源码后：`pnpm run build`，重启 DSH（纯 client 改动刷新页面即可）。
 
+> **远端安装（复制模式）注意**：如果插件是通过 `dsh plugin add` 在另一台机器/远端安装的，DSH 加载的是 profile 内的插件**副本**（`$DSH_HOME/profiles/web/node_modules/dsh-timeline`），不是本目录——本地改代码不会生效。改完代码后执行 `pnpm run sync:dsh` 把构建产物同步到副本（默认同步到 `web` profile，可用 `DSH_PROFILE` 环境变量指定其他 profile）。
+
 ## 技术要点
 
 - TypeScript + [tsdown](https://github.com/rolldown/tsdown)，对齐官方 `clientBundle` 预设

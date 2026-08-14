@@ -66,6 +66,8 @@ pnpm run build       # tsdown → lib/index.js (host) + lib/client.js (browser)
 
 Build artifacts (`lib/`) are committed, so end users don't need to build. After changing source: `pnpm run build`, then restart DSH (or just refresh the page for pure client changes).
 
+> **Remote-install (copy mode) caveat**: when the plugin was added via `dsh plugin add` from another machine/remote, DSH loads a **copy** inside the profile — `$DSH_HOME/profiles/web/node_modules/dsh-timeline` — not this checkout, so local edits have no effect. After building, run `pnpm run sync:dsh` to push the artifacts into the copy (defaults to the `web` profile; set `DSH_PROFILE` to target another).
+
 ## Tech notes
 
 - TypeScript + [tsdown](https://github.com/rolldown/tsdown), following the official `clientBundle` preset shape

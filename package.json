@@ -24,6 +24,7 @@
   },
   "scripts": {
     "build": "tsdown",
+    "sync:dsh": "node scripts/sync-dsh.mjs",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm run build"
   },
