@@ -1,5 +1,9 @@
 # dsh-timeline
 
+<p align="center">
+  <strong>简体中文</strong> | <a href="README.md">English</a>
+</p>
+
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的极简**提问时间线**插件：每条提问一个圆点，挂在界面右侧。点击圆点瞬间跳转到那条提问；悬停查看你当时说了什么、什么时候说的。
 
 ![提问时间线效果](ScreenShot.png)

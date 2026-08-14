@@ -1,5 +1,9 @@
 # dsh-timeline
 
+<p align="center">
+  <a href="README.zh-CN.md">简体中文</a> | <strong>English</strong>
+</p>
+
 A minimal **question timeline** plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): one dot per question you asked, right on the edge of the frame. Click a dot to jump straight to that message; hover to preview what you said and when.
 
 ![Question timeline in action](ScreenShot.png)
