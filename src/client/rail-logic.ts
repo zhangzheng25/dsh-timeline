@@ -1,5 +1,5 @@
 /**
- * Pure rail logic: message text extraction, hover preview, and bar coloring.
+ * Pure rail logic: message text extraction and hover previews.
  * Side-effect free so the rail component can consume it directly.
  */
 
@@ -36,17 +36,4 @@ export const PREVIEW_LENGTH = 80
  */
 export function extractPreview(content: unknown): string {
   return extractText(content).slice(0, PREVIEW_LENGTH)
-}
-
-/**
- * Dot color: blue gradient, like a Git commit graph. Newest (highest index)
- * is the deepest tone `#4D75E6` (hsl lightness 45%), fading to a light blue
- * at 72% lightness for the oldest.
- * @param index - dot position in the rail (0 = oldest).
- * @param total - number of dots.
- */
-export function dotColor(index: number, total: number): string {
-  const t = total <= 1 ? 0 : index / (total - 1)
-  const lightness = 72 - t * 27 // 72% -> 45%
-  return `hsl(218, 88%, ${lightness}%)`
 }
