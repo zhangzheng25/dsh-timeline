@@ -70,6 +70,13 @@ Build artifacts (`lib/`) are committed, so end users don't need to build. After 
 
 > **Remote-install (copy mode) caveat**: when the plugin was added via `dsh plugin add` from another machine/remote, DSH loads a **copy** inside the profile — `$DSH_HOME/profiles/web/node_modules/dsh-timeline` — not this checkout, so local edits have no effect. After building, run `pnpm run sync:dsh` to push the artifacts into the copy (defaults to the `web` profile; set `DSH_PROFILE` to target another).
 
+**How edits take effect** (verified):
+
+| What changed | How to apply |
+|---|---|
+| Client code (`src/client/`, built to `lib/client.js`) | `pnpm run build` then **refresh the page** — no restart needed (DSH serves `/plugins/<id>/client.js` straight from disk with `no-cache`) |
+| Host half (`src/index.ts`) or `cordis.patch.yml` | **Restart DSH** (loaded at startup) |
+
 ## Tech notes
 
 - TypeScript + [tsdown](https://github.com/rolldown/tsdown), following the official `clientBundle` preset shape

@@ -70,6 +70,13 @@ pnpm run build       # tsdown → lib/index.js（host）+ lib/client.js（浏览
 
 > **远端安装（复制模式）注意**：如果插件是通过 `dsh plugin add` 在另一台机器/远端安装的，DSH 加载的是 profile 内的插件**副本**（`$DSH_HOME/profiles/web/node_modules/dsh-timeline`），不是本目录——本地改代码不会生效。改完代码后执行 `pnpm run sync:dsh` 把构建产物同步到副本（默认同步到 `web` profile，可用 `DSH_PROFILE` 环境变量指定其他 profile）。
 
+**改代码后生效方式**（实测）：
+
+| 改了什么 | 生效方式 |
+|---|---|
+| client 代码（`src/client/`，构建后 `lib/client.js`） | `pnpm run build` 后**刷新页面**即可，无需重启（DSH 对 `/plugins/<id>/client.js` 实时读文件、`no-cache`） |
+| host 半端（`src/index.ts`）或 `cordis.patch.yml` | **必须重启 DSH**（启动时加载） |
+
 ## 技术要点
 
 - TypeScript + [tsdown](https://github.com/rolldown/tsdown)，对齐官方 `clientBundle` 预设
