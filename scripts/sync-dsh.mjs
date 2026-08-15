@@ -43,7 +43,7 @@ const files = [
   'lib/client.js.map',
   'cordis.patch.yml',
   'README.md',
-  'README.zh-CN.md',
+  'README.en.md',
 ]
 
 if (!existsSync(join(root, 'lib', 'client.js'))) {
