@@ -38,8 +38,10 @@ dsh plugin --profile web add github:zhangzheng25/dsh-timeline
 本地开发安装：
 
 ```sh
-dsh plugin --profile web add E:\path\to\dsh-timeline   # junction 链接，改代码重建 + 重启即生效
+dsh plugin --profile web add link:E:/path/to/dsh-timeline   # link: 协议 → junction 链接，改代码 pnpm build 后刷新页面即生效
 ```
+
+> ⚠️ 必须用 `link:` 协议：`file:` 协议在 profile 的 hoisted 模式下是**复制**目录，改代码不会生效。用 `link:` 后 `node_modules/dsh-timeline` 是指向本目录的 junction，构建产物直接可见，无需同步、无需重启。
 
 ## 原理
 

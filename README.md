@@ -38,8 +38,10 @@ Restart DSH, open any conversation with at least one question, and the rail appe
 To develop locally instead:
 
 ```sh
-dsh plugin --profile web add E:\path\to\dsh-timeline   # junction-linked, edits apply after rebuild + restart
+dsh plugin --profile web add link:E:/path/to/dsh-timeline   # link: protocol → junction, edits apply after pnpm build + page refresh
 ```
+
+> ⚠️ Use the `link:` protocol: `file:` copies the directory under the profile's hoisted nodeLinker, so local edits never reach it. With `link:`, `node_modules/dsh-timeline` is a junction to this checkout — built artifacts are visible immediately, no sync or restart needed.
 
 ## How it works
 
