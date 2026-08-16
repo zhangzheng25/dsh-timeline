@@ -184,14 +184,21 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
   const loadingOlder = useSession(s => s.loadingOlder)
   const [hovered, setHovered] = useState<{ key: string; x: number; y: number } | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
-  // The session area has selectable views (chat / trajectory). The rail is a
-  // chat-only affordance: the chat view mounts a `[data-conversation-scroll]`
-  // container (also the rail's scrollport for the segment highlight), while
-  // the trajectory view unmounts it entirely (`renderSlot(..., { only: active
-  // id })`). Track that container's presence so the rail renders only while
-  // the chat view is active.
+  // The session area has selectable views served by the `conversation.view`
+  // list slot, which renders ONLY the active occupant (chat mounts the
+  // `[data-conversation-scroll]` scrollport — also the rail's highlight
+  // scrollport — while trajectory unmounts it). The rail is a chat-only
+  // affordance, so its presence is the view-active signal. This stays valid
+  // as more view tabs are added: any future view that does not mount the
+  // chat scrollport is rail-free by construction. The visibility guard
+  // (getClientRects) additionally rejects a hidden/display:none instance in
+  // case some future view ever reuses the container.
+  const isChatViewActive = (): boolean => {
+    const el = document.querySelector('[data-conversation-scroll]')
+    return el !== null && el.getClientRects().length > 0
+  }
   const [chatVisible, setChatVisible] = useState(
-    () => typeof document !== 'undefined' && document.querySelector('[data-conversation-scroll]') !== null,
+    () => typeof document !== 'undefined' && isChatViewActive(),
   )
 
   // Hide scrollbars entirely — both our dot list's and the conversation
@@ -231,7 +238,7 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
   // boolean again is a React no-op, so chat's streaming DOM churn stays cheap.
   useEffect(() => {
     const check = (): void => {
-      setChatVisible(document.querySelector('[data-conversation-scroll]') !== null)
+      setChatVisible(isChatViewActive())
     }
     check()
     const observer = new MutationObserver(check)
