@@ -185,16 +185,17 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
   const [hovered, setHovered] = useState<{ key: string; x: number; y: number } | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   // The session area has selectable views served by the `conversation.view`
-  // list slot, which renders ONLY the active occupant (chat mounts the
-  // `[data-conversation-scroll]` scrollport — also the rail's highlight
-  // scrollport — while trajectory unmounts it). The rail is a chat-only
-  // affordance, so its presence is the view-active signal. This stays valid
-  // as more view tabs are added: any future view that does not mount the
-  // chat scrollport is rail-free by construction. The visibility guard
-  // (getClientRects) additionally rejects a hidden/display:none instance in
-  // case some future view ever reuses the container.
+  // list slot, which renders ONLY the active occupant. The rail is a
+  // chat-only affordance and must hide on every other view (trajectory, and
+  // any future tab). The view signal CANNOT be the `[data-conversation-scroll]`
+  // container — that lives in the always-mounted ConversationRoot shell — so
+  // it must be something the chat view alone renders: every chat message row
+  // is a `[data-chat-flow-key]` element (ChatView renders the full
+  // `chat.order`, no virtualization), and no other view mounts those rows.
+  // The visibility guard (getClientRects) additionally rejects a
+  // hidden/display:none instance if some future view ever reuses the rows.
   const isChatViewActive = (): boolean => {
-    const el = document.querySelector('[data-conversation-scroll]')
+    const el = document.querySelector('[data-chat-flow-key]')
     return el !== null && el.getClientRects().length > 0
   }
   const [chatVisible, setChatVisible] = useState(
@@ -230,10 +231,9 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
     }
   }, [])
 
-  // Keep `chatVisible` in sync with the session view switcher: the
-  // `conversation.view` list slot renders ONLY the active occupant
-  // (chat mounts `[data-conversation-scroll]`, trajectory unmounts it), so
-  // watching the container's presence is the view-active signal. Mutation
+  // Keep `chatVisible` in sync with the session view switcher: switching
+  // conversation.view occupants mounts/unmounts the chat message rows
+  // ([data-chat-flow-key]), which is the chat-active signal. Mutation
   // observer on body (childList) catches the mount/unmount; setting the same
   // boolean again is a React no-op, so chat's streaming DOM churn stays cheap.
   useEffect(() => {
