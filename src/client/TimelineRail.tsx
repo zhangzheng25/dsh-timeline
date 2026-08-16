@@ -184,6 +184,15 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
   const loadingOlder = useSession(s => s.loadingOlder)
   const [hovered, setHovered] = useState<{ key: string; x: number; y: number } | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  // The session area has selectable views (chat / trajectory). The rail is a
+  // chat-only affordance: the chat view mounts a `[data-conversation-scroll]`
+  // container (also the rail's scrollport for the segment highlight), while
+  // the trajectory view unmounts it entirely (`renderSlot(..., { only: active
+  // id })`). Track that container's presence so the rail renders only while
+  // the chat view is active.
+  const [chatVisible, setChatVisible] = useState(
+    () => typeof document !== 'undefined' && document.querySelector('[data-conversation-scroll]') !== null,
+  )
 
   // Hide scrollbars entirely — both our dot list's and the conversation
   // page's vertical one (requested: the rail's dots become the position
@@ -211,6 +220,24 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
     document.head.appendChild(style)
     return () => {
       style.remove()
+    }
+  }, [])
+
+  // Keep `chatVisible` in sync with the session view switcher: the
+  // `conversation.view` list slot renders ONLY the active occupant
+  // (chat mounts `[data-conversation-scroll]`, trajectory unmounts it), so
+  // watching the container's presence is the view-active signal. Mutation
+  // observer on body (childList) catches the mount/unmount; setting the same
+  // boolean again is a React no-op, so chat's streaming DOM churn stays cheap.
+  useEffect(() => {
+    const check = (): void => {
+      setChatVisible(document.querySelector('[data-conversation-scroll]') !== null)
+    }
+    check()
+    const observer = new MutationObserver(check)
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => {
+      observer.disconnect()
     }
   }, [])
 
@@ -318,7 +345,9 @@ export function TimelineRail({ useSession, loadOlder = async () => {} }: Timelin
     }
   }, [currentKey])
 
-  if (marks.length === 0) return null
+  // No questions yet, or the session area is showing a non-chat view
+  // (trajectory): the rail is a chat-only affordance, render nothing.
+  if (marks.length === 0 || !chatVisible) return null
 
   /** Jump to the chat row with the given node key. */
   const jump = (key: string): void => {
